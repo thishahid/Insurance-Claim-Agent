@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:insurance_claim_agent/config/theme.dart';
 import 'package:insurance_claim_agent/models/chat_message.dart';
 import 'package:insurance_claim_agent/services/gemini_service.dart';
+import 'package:insurance_claim_agent/services/document_service.dart';
 import 'package:insurance_claim_agent/widgets/chat_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   File? _selectedFile;
+  String? _documentContent; // Store extracted document content
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -48,8 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(
         ChatMessage.bot(
           text:
-              'Hello! I\'m your insurance assistant. How can I help you today? '
-              'You can ask about claim statuses, policy details, or upload documents for analysis.',
+              'Hello! I\'m your insurance assistant. You can ask about claims, policies, or upload a document (TXT, PDF, DOC, DOCX) and I\'ll answer questions based on its content.',
         ),
       );
     });
@@ -68,6 +69,25 @@ class _ChatScreenState extends State<ChatScreen> {
     final userMessage = _textController.text;
     _textController.clear();
 
+    // If a file is selected, process it
+    if (_selectedFile != null) {
+      try {
+        _addSystemMessage('Processing document...');
+        _documentContent = await DocumentService.extractTextFromFile(
+          _selectedFile!,
+        );
+        _addSystemMessage(
+          'Document processed successfully. You can now ask questions about its content.',
+        );
+      } catch (e) {
+        _addSystemMessage('Error processing document: ${e.toString()}');
+        setState(() {
+          _selectedFile = null;
+        });
+        return;
+      }
+    }
+
     setState(() {
       _messages.add(
         ChatMessage.user(
@@ -81,19 +101,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _scrollToBottom();
 
-    String? attachmentContent;
-    if (_selectedFile != null) {
-      try {
-        attachmentContent = await _selectedFile!.readAsString();
-      } catch (e) {
-        _addSystemMessage('Error reading file: ${e.toString()}');
-      }
-    }
-
     try {
       final response = await _geminiService.generateResponse(
         userMessage,
-        attachmentContent: attachmentContent,
+        documentContent: _documentContent, // Pass document content
       );
 
       setState(() {
@@ -123,6 +134,15 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _clearDocumentContext() {
+    setState(() {
+      _documentContent = null;
+    });
+    _addSystemMessage(
+      'Document context cleared. You can upload a new document if needed.',
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -139,6 +159,29 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Document context indicator
+        if (_documentContent != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppTheme.oliveGreen.withValues(alpha: 0.2),
+            child: Row(
+              children: [
+                const Icon(Icons.description, color: AppTheme.oliveGreen),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Document context is active',
+                    style: TextStyle(color: AppTheme.textLight),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.clear, color: AppTheme.textDark),
+                  onPressed: _clearDocumentContext,
+                  tooltip: 'Clear document context',
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
@@ -222,6 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
               IconButton(
                 icon: const Icon(Icons.attach_file, color: AppTheme.oliveGreen),
                 onPressed: _pickFile,
+                tooltip: 'Upload document',
               ),
               IconButton(
                 icon: const Icon(Icons.mic, color: AppTheme.oliveGreen),
@@ -239,12 +283,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: TextField(
                   controller: _textController,
                   focusNode: _focusNode,
-                  decoration: const InputDecoration(
-                    hintText:
-                        'Ask about claims, policies, or upload a document...',
+                  decoration: InputDecoration(
+                    hintText: _documentContent != null
+                        ? 'Ask about the document...'
+                        : 'Ask about claims, policies, or upload a document...',
                     hintStyle: TextStyle(color: AppTheme.textDark),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),

@@ -1,5 +1,6 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:insurance_claim_agent/config/api_config.dart';
+import 'package:insurance_claim_agent/services/document_service.dart'; // Add this import
 
 class GeminiService {
   late GenerativeModel _model;
@@ -22,13 +23,29 @@ class GeminiService {
 
   Future<String> generateResponse(
     String prompt, {
-    String? attachmentContent,
+    String? documentContent,
   }) async {
     try {
-      // Combine prompt with attachment content if available
-      final fullPrompt = attachmentContent != null
-          ? "$prompt\n\nAttachment content:\n$attachmentContent"
-          : prompt;
+      // Build the full prompt with document content if available
+      String fullPrompt;
+      if (documentContent != null) {
+        // Truncate document content if it's too long
+        final truncatedContent = DocumentService.truncateText(documentContent);
+
+        fullPrompt =
+            """
+        You are an insurance assistant with access to the following document content. 
+        Please answer the user's question based primarily on this document content. 
+        If the information is not in the document, you can use your general knowledge but clearly indicate that.
+        
+        Document content:
+        $truncatedContent
+        
+        User's question: $prompt
+        """;
+      } else {
+        fullPrompt = prompt;
+      }
 
       // Add user message to history
       _history.add(Content.text(fullPrompt));

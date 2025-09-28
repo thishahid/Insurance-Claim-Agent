@@ -105,7 +105,7 @@ class _FaqScreenState extends State<FaqScreen> {
       label: Text(category),
       selected: isSelected,
       backgroundColor: AppTheme.cardBackground,
-      selectedColor: AppTheme.oliveGreen.withOpacity(0.3),
+      selectedColor: AppTheme.oliveGreen.withValues(alpha: 0.3),
       checkmarkColor: AppTheme.oliveGreen,
       labelStyle: TextStyle(
         color: isSelected ? AppTheme.textLight : AppTheme.textDark,
