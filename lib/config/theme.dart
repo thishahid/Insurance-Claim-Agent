@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class AppTheme {
   static const Color darkBackground = Color(0xFF121212);
@@ -46,6 +47,65 @@ class AppTheme {
           ),
         ),
       ),
+    );
+  }
+
+  // Create a separate method for markdown styles
+  static MarkdownStyleSheet get markdownStyleSheet {
+    return MarkdownStyleSheet.fromTheme(ThemeData.dark()).copyWith(
+      p: TextStyle(color: textLight, height: 1.5),
+      h1: TextStyle(
+        color: lightOlive,
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+      ),
+      h2: TextStyle(
+        color: lightOlive,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+      ),
+      h3: TextStyle(
+        color: lightOlive,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      h4: TextStyle(
+        color: lightOlive,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+      h5: TextStyle(
+        color: lightOlive,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+      h6: TextStyle(
+        color: lightOlive,
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+      ),
+      strong: TextStyle(color: textLight, fontWeight: FontWeight.bold),
+      em: TextStyle(color: textLight, fontStyle: FontStyle.italic),
+      code: TextStyle(
+        color: accentGreen,
+        backgroundColor: darkBackground,
+        fontFamily: 'monospace',
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: darkBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: oliveGreen.withValues(alpha: 0.3)),
+      ),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(left: BorderSide(color: oliveGreen, width: 4)),
+        color: cardBackground,
+      ),
+      blockquote: TextStyle(color: textDark, fontStyle: FontStyle.italic),
+      listBullet: TextStyle(color: lightOlive),
+      checkbox: TextStyle(color: lightOlive),
+      tableBorder: TableBorder.all(color: oliveGreen.withValues(alpha: 0.3)),
+      tableHead: TextStyle(color: lightOlive, fontWeight: FontWeight.bold),
+      tableBody: TextStyle(color: textLight),
     );
   }
 }

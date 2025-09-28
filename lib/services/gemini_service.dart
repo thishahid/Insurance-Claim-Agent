@@ -35,8 +35,11 @@ class GeminiService {
 
       // Generate response
       final response = await _model.generateContent(_history);
-      final responseText =
+      String responseText =
           response.text ?? "I'm sorry, I couldn't generate a response.";
+
+      // Format the response to make it more visually appealing
+      responseText = _formatResponse(responseText);
 
       // Add bot response to history
       _history.add(Content.text(responseText));
@@ -45,6 +48,43 @@ class GeminiService {
     } catch (e) {
       return "Error: ${e.toString()}";
     }
+  }
+
+  String _formatResponse(String text) {
+    // Fix for bold text formatting
+    text = text.replaceAllMapped(
+      RegExp(r'\*\*(.*?)\*\*'),
+      (match) => '**${match.group(1)}**',
+    );
+
+    // Fix for italic text formatting
+    text = text.replaceAllMapped(
+      RegExp(r'\*(.*?)\*'),
+      (match) => '*${match.group(1)}*',
+    );
+
+    // Convert numbered lists to markdown format
+    text = text.replaceAllMapped(
+      RegExp(r'^(\d+)\.\s+(.*?)$', multiLine: true),
+      (match) {
+        return '${match.group(1)}. ${match.group(2)}';
+      },
+    );
+
+    // Convert bullet points to markdown format
+    text = text.replaceAllMapped(RegExp(r'^[•·-]\s+(.*?)$', multiLine: true), (
+      match,
+    ) {
+      return '- ${match.group(1)}';
+    });
+
+    // Ensure proper line breaks
+    text = text.replaceAll(
+      RegExp(r'\n{3,}'),
+      '\n\n',
+    ); // Remove excessive line breaks
+
+    return text;
   }
 
   void clearHistory() {

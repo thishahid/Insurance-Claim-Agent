@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:insurance_claim_agent/config/theme.dart';
 import 'package:insurance_claim_agent/models/chat_message.dart';
 
@@ -33,7 +34,7 @@ class ChatBubble extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isUser
-                    ? AppTheme.oliveGreen.withOpacity(0.8)
+                    ? AppTheme.oliveGreen.withValues(alpha: 0.8)
                     : isSystem
                     ? AppTheme.cardBackground
                     : AppTheme.cardBackground,
@@ -44,7 +45,9 @@ class ChatBubble extends StatelessWidget {
                   bottomRight: isUser ? Radius.zero : const Radius.circular(16),
                 ),
                 border: isSystem
-                    ? Border.all(color: AppTheme.oliveGreen.withOpacity(0.5))
+                    ? Border.all(
+                        color: AppTheme.oliveGreen.withValues(alpha: 0.5),
+                      )
                     : null,
               ),
               child: Column(
@@ -70,12 +73,17 @@ class ChatBubble extends StatelessWidget {
                       ],
                     ),
                   if (isSystem) const SizedBox(height: 8),
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : AppTheme.textLight,
-                    ),
-                  ),
+
+                  // Use Markdown for bot messages, regular text for user/system messages
+                  isUser || isSystem
+                      ? Text(
+                          message.text,
+                          style: TextStyle(
+                            color: isUser ? Colors.white : AppTheme.textLight,
+                          ),
+                        )
+                      : _buildMarkdownContent(context, message.text),
+
                   if (message.attachmentPath != null) ...[
                     const SizedBox(height: 8),
                     InkWell(
@@ -116,6 +124,101 @@ class ChatBubble extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildMarkdownContent(BuildContext context, String text) {
+    // Create a complete theme with all required text styles
+    final baseTheme = ThemeData(
+      brightness: Brightness.dark,
+      textTheme: const TextTheme(
+        bodyMedium: TextStyle(
+          fontSize: 16.0,
+        ), // Explicitly set the required font size
+        bodyLarge: TextStyle(fontSize: 16.0),
+        bodySmall: TextStyle(fontSize: 14.0),
+      ),
+    );
+
+    return MarkdownBody(
+      data: text,
+      styleSheet: MarkdownStyleSheet.fromTheme(baseTheme).copyWith(
+        p: TextStyle(color: AppTheme.textLight, height: 1.5),
+        h1: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        h2: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        h3: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+        h4: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+        h5: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+        h6: TextStyle(
+          color: AppTheme.lightOlive,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+        strong: TextStyle(
+          color: AppTheme.textLight,
+          fontWeight: FontWeight.bold,
+        ),
+        em: TextStyle(color: AppTheme.textLight, fontStyle: FontStyle.italic),
+        code: TextStyle(
+          color: AppTheme.accentGreen,
+          backgroundColor: AppTheme.darkBackground,
+          fontFamily: 'monospace',
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: AppTheme.darkBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.oliveGreen.withValues(alpha: 0.3)),
+        ),
+        blockquoteDecoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(color: AppTheme.oliveGreen, width: 4),
+          ),
+          color: AppTheme.cardBackground,
+        ),
+        listBullet: TextStyle(color: AppTheme.lightOlive),
+        checkbox: TextStyle(color: AppTheme.lightOlive),
+        tableBorder: TableBorder.all(
+          color: AppTheme.oliveGreen.withValues(alpha: 0.3),
+        ),
+        tableHead: TextStyle(
+          color: AppTheme.lightOlive,
+          fontWeight: FontWeight.bold,
+        ),
+        tableBody: TextStyle(color: AppTheme.textLight),
+      ),
+      selectable: true,
+      onTapLink: (text, href, title) {
+        // Handle link taps
+        if (href != null) {
+          // In a real app, use url_launcher to open links
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Link tapped: $href'),
+              backgroundColor: AppTheme.oliveGreen,
+            ),
+          );
+        }
+      },
     );
   }
 }

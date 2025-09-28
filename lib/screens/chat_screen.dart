@@ -20,12 +20,19 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   File? _selectedFile;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _initializeGemini();
     _addWelcomeMessage();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeGemini() async {
@@ -164,8 +171,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageComposer() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      color: AppTheme.cardBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           if (_selectedFile != null)
@@ -222,18 +238,32 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: TextField(
                   controller: _textController,
+                  focusNode: _focusNode,
                   decoration: const InputDecoration(
-                    hintText: 'Type your message...',
+                    hintText:
+                        'Ask about claims, policies, or upload a document...',
+                    hintStyle: TextStyle(color: AppTheme.textDark),
                     border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   style: const TextStyle(color: AppTheme.textLight),
                   textCapitalization: TextCapitalization.sentences,
                   onSubmitted: (_) => _handleSendMessage(),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.send, color: AppTheme.oliveGreen),
-                onPressed: _handleSendMessage,
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.oliveGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.send, color: Colors.white),
+                  onPressed: _handleSendMessage,
+                ),
               ),
             ],
           ),
