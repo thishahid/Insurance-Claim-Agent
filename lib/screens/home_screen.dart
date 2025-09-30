@@ -47,15 +47,28 @@ class _HomeScreenState extends State<HomeScreen>
         children: const [ChatScreen(), FaqScreen()],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(
-          bottom: 50.0,
-        ), // Move FAB up by 50 pixels
-        child: FloatingActionButton(
-          onPressed: () {
-            _showClaimStatusDialog();
-          },
-          backgroundColor: AppTheme.oliveGreen,
-          child: const Icon(Icons.search),
+        padding: const EdgeInsets.only(bottom: 50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              onPressed: () {
+                _showClaimStatusDialog();
+              },
+              backgroundColor: AppTheme.oliveGreen,
+              heroTag: 'claimStatus',
+              child: const Icon(Icons.search),
+            ),
+            const SizedBox(height: 16),
+            FloatingActionButton(
+              onPressed: () {
+                _showDocumentUploadDialog();
+              },
+              backgroundColor: AppTheme.lightOlive,
+              heroTag: 'documentUpload',
+              child: const Icon(Icons.upload_file),
+            ),
+          ],
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -92,6 +105,33 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDocumentUploadDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Document'),
+        content: const Text(
+          'You can upload TXT, PDF, DOC, or DOCX files to ask questions about their content. '
+          'Switch to the Chat tab and use the attachment button to upload a document.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Switch to chat tab
+              _tabController.animateTo(0);
+            },
+            child: const Text('Go to Chat'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
