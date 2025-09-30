@@ -1,10 +1,34 @@
+// services/gemini_service.dart
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:insurance_claim_agent/config/api_config.dart';
-import 'package:insurance_claim_agent/services/document_service.dart'; // Add this import
+import 'package:insurance_claim_agent/services/document_service.dart';
 
 class GeminiService {
   late GenerativeModel _model;
   final List<Content> _history = [];
+
+  // Base system prompt that defines the AI's role and constraints
+  final String _systemPrompt = """
+You are an Insurance Claim Assistant, specialized in providing information about insurance claims, policies, and related procedures.
+
+Your role is strictly limited to:
+- Answering questions about insurance claims
+- Explaining insurance policies and coverage
+- Guiding through claim procedures
+- Providing information about required documents
+- Explaining insurance terminology
+- Assisting with claim status inquiries
+- Answering questions based on uploaded documents related to insurance
+
+You must:
+1. Only respond to insurance-related queries
+2. Politely decline to answer questions outside the insurance domain
+3. If asked about your capabilities, explain that you can help with insurance-related queries
+4. Never provide medical, legal, or financial advice beyond insurance matters
+5. If asked about non-insurance topics, respond with: "I'm designed specifically to assist with insurance-related queries. I can help with questions about claims, policies, and insurance procedures. Is there something insurance-related I can help you with?"
+
+Always maintain a professional, helpful tone focused on insurance matters.
+""";
 
   Future<void> initialize() async {
     final apiKey = await ApiConfig.getApiKey();
@@ -16,7 +40,7 @@ class GeminiService {
       apiKey: apiKey,
       safetySettings: [
         SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
-        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
       ],
     );
   }
@@ -26,25 +50,33 @@ class GeminiService {
     String? documentContent,
   }) async {
     try {
-      // Build the full prompt with document content if available
+      // Build the full prompt with system instructions and document content if available
       String fullPrompt;
+
       if (documentContent != null) {
         // Truncate document content if it's too long
         final truncatedContent = DocumentService.truncateText(documentContent);
 
         fullPrompt =
             """
-        You are an insurance assistant with access to the following document content. 
-        Please answer the user's question based primarily on this document content. 
-        If the information is not in the document, you can use your general knowledge but clearly indicate that.
-        
-        Document content:
-        $truncatedContent
-        
-        User's question: $prompt
-        """;
+ $_systemPrompt
+
+You have access to the following document content related to insurance. 
+Please answer the user's question based primarily on this document content. 
+If the information is not in the document, use your insurance knowledge to respond.
+
+Document content:
+ $truncatedContent
+
+User's question: $prompt
+""";
       } else {
-        fullPrompt = prompt;
+        fullPrompt =
+            """
+ $_systemPrompt
+
+User's question: $prompt
+""";
       }
 
       // Add user message to history
