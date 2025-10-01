@@ -3,8 +3,9 @@ import 'package:insurance_claim_agent/config/api_config.dart';
 import 'package:insurance_claim_agent/services/document_service.dart';
 
 class GeminiService {
-  late GenerativeModel _model;
+  GenerativeModel? _model; // Make it nullable
   final List<Content> _history = [];
+  bool _isInitialized = false;
 
   // Define the system prompt that defines the AI's role and capabilities
   static const String _systemPrompt = """
@@ -36,6 +37,8 @@ When provided with dataset information, use it as your primary source of knowled
 """;
 
   Future<void> initialize() async {
+    if (_isInitialized) return; // Already initialized
+
     final apiKey = await ApiConfig.getApiKey();
     if (apiKey == null) {
       throw Exception('API key not found');
@@ -51,6 +54,7 @@ When provided with dataset information, use it as your primary source of knowled
 
     // Initialize the conversation with the system prompt
     _history.add(Content.text(_systemPrompt));
+    _isInitialized = true;
   }
 
   Future<String> generateResponse(
@@ -59,6 +63,11 @@ When provided with dataset information, use it as your primary source of knowled
     String? datasetContext,
   }) async {
     try {
+      // Ensure the model is initialized
+      if (!_isInitialized) {
+        await initialize();
+      }
+
       // Build the full prompt with document and dataset content if available
       String fullPrompt = prompt;
 
@@ -78,7 +87,9 @@ When provided with dataset information, use it as your primary source of knowled
       _history.add(Content.text(fullPrompt));
 
       // Generate response
-      final response = await _model.generateContent(_history);
+      final response = await _model!.generateContent(
+        _history,
+      ); // Use ! since we've initialized it
       String responseText =
           response.text ?? "I'm sorry, I couldn't generate a response.";
 

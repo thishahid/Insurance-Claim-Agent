@@ -6,8 +6,14 @@ import 'package:insurance_claim_agent/models/chat_message.dart';
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final VoidCallback? onAttachmentTap;
+  final bool? isUsingDataset;
 
-  const ChatBubble({super.key, required this.message, this.onAttachmentTap});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    this.onAttachmentTap,
+    this.isUsingDataset,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +79,39 @@ class ChatBubble extends StatelessWidget {
                       ],
                     ),
                   if (isSystem) const SizedBox(height: 8),
+
+                  // Show dataset indicator
+                  if (isUsingDataset == true && !isUser && !isSystem)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.data_array,
+                            color: AppTheme.accentGreen,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Using dataset data',
+                            style: TextStyle(
+                              color: AppTheme.accentGreen,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // Use Markdown for bot messages, regular text for user/system messages
                   isUser || isSystem

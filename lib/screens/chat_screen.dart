@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:insurance_claim_agent/config/theme.dart';
 import 'package:insurance_claim_agent/models/chat_message.dart';
-import 'package:insurance_claim_agent/services/gemini_service.dart';
+import 'package:insurance_claim_agent/services/rag_service.dart';
 import 'package:insurance_claim_agent/services/document_service.dart';
 import 'package:insurance_claim_agent/widgets/chat_bubble.dart';
+import 'package:insurance_claim_agent/services/dataset_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -15,33 +16,31 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final GeminiService _geminiService = GeminiService();
+  final RAGService _ragService = RAGService();
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   File? _selectedFile;
-  String? _documentContent; // Store extracted document content
+  String? _documentContent;
   final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _initializeGemini();
+    _initializeServices();
     _addWelcomeMessage();
   }
 
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  Future<void> _initializeGemini() async {
+  Future<void> _initializeServices() async {
     try {
-      await _geminiService.initialize();
+      // Initialize the dataset
+      await DatasetService.database;
+      _addSystemMessage(
+        'Dataset loaded successfully. You can now ask questions about insurance policies and claims.',
+      );
     } catch (e) {
-      _addSystemMessage('Failed to initialize AI service: ${e.toString()}');
+      _addSystemMessage('Error loading dataset: ${e.toString()}');
     }
   }
 
@@ -50,7 +49,9 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(
         ChatMessage.bot(
           text:
-              'Hello! I\'m your insurance assistant. You can ask about claims, policies, or upload a document (TXT, PDF, DOC, DOCX) and I\'ll answer questions based on its content.',
+              'Hello! I\'m your insurance assistant. I have access to a comprehensive insurance dataset with policy information and claim data. '
+              'You can ask about claim statuses, policy details, or upload documents for analysis. '
+              'I can provide insights based on both the dataset and any documents you upload.',
         ),
       );
     });
@@ -102,9 +103,10 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
 
     try {
-      final response = await _geminiService.generateResponse(
+      // Use RAGService instead of GeminiService directly
+      final response = await _ragService.generateResponse(
         userMessage,
-        documentContent: _documentContent, // Pass document content
+        documentContent: _documentContent,
       );
 
       setState(() {
@@ -132,15 +134,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _selectedFile = File(result.files.single.path!);
       });
     }
-  }
-
-  void _clearDocumentContext() {
-    setState(() {
-      _documentContent = null;
-    });
-    _addSystemMessage(
-      'Document context cleared. You can upload a new document if needed.',
-    );
   }
 
   void _scrollToBottom() {
@@ -176,7 +169,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.clear, color: AppTheme.textDark),
-                  onPressed: _clearDocumentContext,
+                  onPressed: () {
+                    setState(() {
+                      _documentContent = null;
+                    });
+                  },
                   tooltip: 'Clear document context',
                 ),
               ],
@@ -189,11 +186,27 @@ class _ChatScreenState extends State<ChatScreen> {
             itemCount: _messages.length,
             itemBuilder: (context, index) {
               final message = _messages[index];
+              bool isUsingDataset = false;
+              if (message.type == MessageType.bot && index > 0) {
+                // Look at the previous user message to see if it was a dataset query
+                final prevMessage = _messages[index - 1];
+                if (prevMessage.type == MessageType.user) {
+                  final userText = prevMessage.text.toLowerCase();
+                  // Simple heuristic to detect dataset queries
+                  isUsingDataset =
+                      userText.contains('dataset') ||
+                      userText.contains('policy') ||
+                      userText.contains('claim') ||
+                      userText.contains('customer') ||
+                      userText.contains('vehicle');
+                }
+              }
               return ChatBubble(
                 message: message,
                 onAttachmentTap: message.attachmentPath != null
                     ? () => _showAttachmentDialog(message.attachmentPath!)
                     : null,
+                isUsingDataset: isUsingDataset,
               );
             },
           ),
@@ -285,7 +298,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   focusNode: _focusNode,
                   decoration: InputDecoration(
                     hintText: _documentContent != null
-                        ? 'Ask about the document...'
+                        ? 'Ask about the document or dataset...'
                         : 'Ask about claims, policies, or upload a document...',
                     hintStyle: TextStyle(color: AppTheme.textDark),
                     border: InputBorder.none,
