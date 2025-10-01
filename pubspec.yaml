@@ -48,6 +48,8 @@ dependencies:
   pdfx: ^2.3.0
   syncfusion_flutter_pdf: ^31.1.19
   archive: ^3.6.1
+  sqflite: ^2.3.0
+  csv: ^5.0.2
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -68,6 +70,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/data/insurance_dataset.csv
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

@@ -1,4 +1,3 @@
-// services/gemini_service.dart
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:insurance_claim_agent/config/api_config.dart';
 import 'package:insurance_claim_agent/services/document_service.dart';
@@ -7,27 +6,33 @@ class GeminiService {
   late GenerativeModel _model;
   final List<Content> _history = [];
 
-  // Base system prompt that defines the AI's role and constraints
-  final String _systemPrompt = """
-You are an Insurance Claim Assistant, specialized in providing information about insurance claims, policies, and related procedures.
+  // Define the system prompt that defines the AI's role and capabilities
+  static const String _systemPrompt = """
+You are an Insurance Claim Agent Assistant, a specialized AI designed to help with insurance-related queries. Your role is strictly limited to insurance topics including:
 
-Your role is strictly limited to:
-- Answering questions about insurance claims
+1. Insurance claim processes and procedures
+2. Policy information and coverage details
+3. Claim status updates and tracking
+4. Documentation requirements for claims
+5. Insurance terminology and concepts
+6. General insurance industry knowledge
+
+When asked about your capabilities, respond with:
+"I can help you with various insurance-related tasks, including:
+- Checking claim statuses
 - Explaining insurance policies and coverage
-- Guiding through claim procedures
-- Providing information about required documents
-- Explaining insurance terminology
-- Assisting with claim status inquiries
-- Answering questions based on uploaded documents related to insurance
+- Guiding you through the claim process
+- Answering questions about required documentation
+- Providing information about insurance terminology
+- Assisting with claim-related queries based on uploaded documents and dataset information
 
-You must:
-1. Only respond to insurance-related queries
-2. Politely decline to answer questions outside the insurance domain
-3. If asked about your capabilities, explain that you can help with insurance-related queries
-4. Never provide medical, legal, or financial advice beyond insurance matters
-5. If asked about non-insurance topics, respond with: "I'm designed specifically to assist with insurance-related queries. I can help with questions about claims, policies, and insurance procedures. Is there something insurance-related I can help you with?"
+How can I assist you with your insurance needs today?"
 
-Always maintain a professional, helpful tone focused on insurance matters.
+If asked about topics outside the insurance domain, politely decline and redirect the conversation back to insurance-related matters.
+
+Always maintain a professional, helpful, and empathetic tone, understanding that insurance matters can be stressful for users.
+
+When provided with dataset information, use it as your primary source of knowledge for answering questions about policies, claims, and customer data.
 """;
 
   Future<void> initialize() async {
@@ -40,43 +45,33 @@ Always maintain a professional, helpful tone focused on insurance matters.
       apiKey: apiKey,
       safetySettings: [
         SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
-        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
+        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.none),
       ],
     );
+
+    // Initialize the conversation with the system prompt
+    _history.add(Content.text(_systemPrompt));
   }
 
   Future<String> generateResponse(
     String prompt, {
     String? documentContent,
+    String? datasetContext,
   }) async {
     try {
-      // Build the full prompt with system instructions and document content if available
-      String fullPrompt;
+      // Build the full prompt with document and dataset content if available
+      String fullPrompt = prompt;
 
-      if (documentContent != null) {
-        // Truncate document content if it's too long
-        final truncatedContent = DocumentService.truncateText(documentContent);
-
+      if (documentContent != null || datasetContext != null) {
         fullPrompt =
             """
- $_systemPrompt
-
-You have access to the following document content related to insurance. 
-Please answer the user's question based primarily on this document content. 
-If the information is not in the document, use your insurance knowledge to respond.
-
-Document content:
- $truncatedContent
-
-User's question: $prompt
-""";
-      } else {
-        fullPrompt =
-            """
- $_systemPrompt
-
-User's question: $prompt
-""";
+        User question: $prompt
+        
+        ${datasetContext != null ? "Relevant dataset information:\n$datasetContext\n\n" : ""}
+        ${documentContent != null ? "Uploaded document content:\n${DocumentService.truncateText(documentContent)}\n\n" : ""}
+        
+        Please answer the user's question based on the provided information. If the information is not available, you can use your general knowledge but clearly indicate that.
+        """;
       }
 
       // Add user message to history
@@ -138,5 +133,7 @@ User's question: $prompt
 
   void clearHistory() {
     _history.clear();
+    // Re-add the system prompt after clearing history
+    _history.add(Content.text(_systemPrompt));
   }
 }

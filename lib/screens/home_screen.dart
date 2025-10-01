@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insurance_claim_agent/config/theme.dart';
 import 'package:insurance_claim_agent/screens/chat_screen.dart';
 import 'package:insurance_claim_agent/screens/faq_screen.dart';
+import 'package:insurance_claim_agent/screens/dataset_viewer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,6 +68,19 @@ class _HomeScreenState extends State<HomeScreen>
               backgroundColor: AppTheme.lightOlive,
               heroTag: 'documentUpload',
               child: const Icon(Icons.upload_file),
+            ),
+            const SizedBox(height: 16),
+            FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const DatasetViewerScreen(),
+                  ),
+                );
+              },
+              backgroundColor: AppTheme.accentGreen,
+              heroTag: 'datasetViewer',
+              child: const Icon(Icons.data_usage),
             ),
           ],
         ),
