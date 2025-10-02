@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 class DatasetService {
@@ -24,19 +24,19 @@ class DatasetService {
   // Initialize the database from CSV
   static Future<Database> _initDB() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentsDirectory.path, 'insurance_dataset.db');
+    final dbPath = path.join(documentsDirectory.path, 'insurance_dataset.db');
 
     // Check if database already exists
-    final exists = await databaseExists(path);
+    final exists = await databaseExists(dbPath);
 
     if (!exists) {
       // Create the database from CSV
-      final db = await openDatabase(path, version: 1);
+      final db = await openDatabase(dbPath, version: 1);
       await _createTableFromCSV(db);
       return db;
     } else {
       // Open existing database
-      return await openDatabase(path, version: 1);
+      return await openDatabase(dbPath, version: 1);
     }
   }
 
@@ -107,6 +107,45 @@ class DatasetService {
       limit: limit,
     );
     return results;
+  }
+
+  // NEW: Get specific record by policy_id
+  static Future<Map<String, dynamic>?> getRecordByPolicyId(
+    String policyId,
+  ) async {
+    final db = await database;
+    final results = await db.query(
+      _tableName,
+      where: 'policy_id = ?',
+      whereArgs: [policyId],
+      limit: 1,
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+
+  // NEW: Get records by claim status
+  static Future<List<Map<String, dynamic>>> getRecordsByClaimStatus(
+    String claimStatus,
+  ) async {
+    final db = await database;
+    return await db.query(
+      _tableName,
+      where: 'claim_status = ?',
+      whereArgs: [claimStatus],
+    );
+  }
+
+  // NEW: Get records by vehicle age range
+  static Future<List<Map<String, dynamic>>> getRecordsByVehicleAgeRange(
+    int minAge,
+    int maxAge,
+  ) async {
+    final db = await database;
+    return await db.query(
+      _tableName,
+      where: 'CAST(vehicle_age AS INTEGER) BETWEEN ? AND ?',
+      whereArgs: [minAge, maxAge],
+    );
   }
 
   // Get dataset statistics

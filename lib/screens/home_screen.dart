@@ -45,7 +45,10 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [ChatScreen(), FaqScreen()],
+        children: const [
+          ChatScreen(),
+          FaqScreen(),
+        ],
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50.0),
@@ -78,9 +81,16 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 );
               },
-              backgroundColor: AppTheme.accentGreen,
+              backgroundColor: const Color.fromARGB(255, 84, 165, 84),
               heroTag: 'datasetViewer',
               child: const Icon(Icons.data_usage),
+            ),
+            const SizedBox(height: 16),
+            FloatingActionButton(
+              onPressed: _showDatasetQuestionsDialog,
+              backgroundColor: Colors.blue,
+              heroTag: 'datasetQuestions',
+              child: const Icon(Icons.help),
             ),
           ],
         ),
@@ -131,6 +141,37 @@ class _HomeScreenState extends State<HomeScreen>
         content: const Text(
           'You can upload TXT, PDF, DOC, or DOCX files to ask questions about their content. '
           'Switch to the Chat tab and use the attachment button to upload a document.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Switch to chat tab
+              _tabController.animateTo(0);
+            },
+            child: const Text('Go to Chat'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+  void _showDatasetQuestionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dataset Questions'),
+        content: const Text(
+          'You can ask questions like:\n\n'
+          '• What is the average vehicle age for customers with claim status "1"?\n'
+          '• How many policies have a claim status of "0"?\n'
+          '• What is the distribution of claim statuses in the dataset?\n'
+          '• Show me policies with high ncap_rating and claim status "1"\n'
+          '• What is the most common fuel type among policies with claims?',
+          style: TextStyle(fontSize: 16),
         ),
         actions: [
           TextButton(
