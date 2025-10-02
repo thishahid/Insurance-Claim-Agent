@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -30,7 +31,15 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // Required to open drawer programmatically if needed
       appBar: AppBar(
+        // Force the hamburger icon on all platforms/sizes
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
         title: const Text('Insurance Assistant'),
         bottom: TabBar(
           controller: _tabController,
@@ -43,59 +52,64 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          ChatScreen(),
-          FaqScreen(),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 50.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            FloatingActionButton(
-              onPressed: () {
+            DrawerHeader(
+              decoration: BoxDecoration(color: AppTheme.oliveGreen),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: const Text('Claim Status Lookup'),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
                 _showClaimStatusDialog();
               },
-              backgroundColor: AppTheme.oliveGreen,
-              heroTag: 'claimStatus',
-              child: const Icon(Icons.search),
             ),
-            const SizedBox(height: 16),
-            FloatingActionButton(
-              onPressed: () {
+            ListTile(
+              leading: const Icon(Icons.upload_file),
+              title: const Text('Upload Document'),
+              onTap: () {
+                Navigator.pop(context);
                 _showDocumentUploadDialog();
               },
-              backgroundColor: AppTheme.lightOlive,
-              heroTag: 'documentUpload',
-              child: const Icon(Icons.upload_file),
             ),
-            const SizedBox(height: 16),
-            FloatingActionButton(
-              onPressed: () {
+            ListTile(
+              leading: const Icon(Icons.data_usage),
+              title: const Text('Dataset Viewer'),
+              onTap: () {
+                Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const DatasetViewerScreen(),
                   ),
                 );
               },
-              backgroundColor: const Color.fromARGB(255, 84, 165, 84),
-              heroTag: 'datasetViewer',
-              child: const Icon(Icons.data_usage),
             ),
-            const SizedBox(height: 16),
-            FloatingActionButton(
-              onPressed: _showDatasetQuestionsDialog,
-              backgroundColor: Colors.blue,
-              heroTag: 'datasetQuestions',
-              child: const Icon(Icons.help),
+            ListTile(
+              leading: const Icon(Icons.help),
+              title: const Text('Dataset Questions'),
+              onTap: () {
+                Navigator.pop(context);
+                _showDatasetQuestionsDialog();
+              },
             ),
           ],
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      body: TabBarView(
+        controller: _tabController,
+        children: const [ChatScreen(), FaqScreen()],
+      ),
     );
   }
 
@@ -117,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // In a real app, fetch claim details
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Claim status lookup feature coming soon!'),
@@ -146,7 +159,6 @@ class _HomeScreenState extends State<HomeScreen>
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // Switch to chat tab
               _tabController.animateTo(0);
             },
             child: const Text('Go to Chat'),
@@ -159,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
   void _showDatasetQuestionsDialog() {
     showDialog(
       context: context,
@@ -177,7 +190,6 @@ class _HomeScreenState extends State<HomeScreen>
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // Switch to chat tab
               _tabController.animateTo(0);
             },
             child: const Text('Go to Chat'),
